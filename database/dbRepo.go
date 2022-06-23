@@ -41,10 +41,11 @@ func DatabaseSetUp() *mongo.Client {
 }
 
 //UserData
-func UserData(client *mongo.Client, collection string) *mongo.Collection {
-	return nil
+func UserData(client *mongo.Client, collectionName string) *mongo.Collection {
+	var collection *mongo.Collection = client.Database("Ecommerce").Collection(collectionName)
+	return collection
 }
 
-func ProductData(client *mongo.Client, collection string) *mongo.Collection {
+func ProductData(client *mongo.Client, collectionName string) *mongo.Collection {
 	return nil
 }

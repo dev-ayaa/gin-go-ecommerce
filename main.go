@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/yusuf/ecommerce-cart/controller"
-	"github.com/yusuf/ecommerce-cart/database"
-	"github.com/yusuf/ecommerce-cart/middleware"
-	"github.com/yusuf/ecommerce-cart/routes"
+	"github.com/yusuf/gin-gonic-ecommerce/controller"
+	"github.com/yusuf/gin-gonic-ecommerce/database"
+	"github.com/yusuf/gin-gonic-ecommerce/middleware"
+	"github.com/yusuf/gin-gonic-ecommerce/routes"
 )
 
 func main() {

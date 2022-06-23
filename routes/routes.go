@@ -3,7 +3,7 @@ package routes
 
 import(
 	"github.com/gin-gonic/gin"
-	"github.com/yusuf/ecommerce-cart/controller"
+	"github.com/yusuf/gin-gonic-ecommerce/controller"
 )
 
 //UserRoutes routes for the user 

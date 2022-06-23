@@ -1,4 +1,4 @@
-module github.com/yusuf/ecommerce-cart
+module github.com/yusuf/gin-gonic-ecommerce
 
 go 1.18
 

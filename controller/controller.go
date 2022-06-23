@@ -38,3 +38,4 @@ func SearchProduct() *gin.HandlerFunc {
 func SearchProductByQuery() *gin.HandlerFunc {
 	return nil
 }
+

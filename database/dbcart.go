@@ -4,8 +4,8 @@ import "errors"
 
 //Defining custom errors
 var(
-	ErrCantFindProduct = errors.New("can't find the product")
-	ErrCantDecodeProducts  = errors.New("can't find or decode the product")
+	ErrCantFindProduct = errors.New("cannot find the product")
+	ErrCantDecodeProducts  = errors.New("cannot find or decode the product")
 	ErrUserIdIsNotValid = errors.New("this user is not valid")
 	ErrCantUpdateUser = errors.New("cannot add this product to the cart")
 	ErrCantRemoveItemCart = errors.New("cannot remove this item from the cart")
