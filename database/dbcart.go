@@ -1,6 +1,11 @@
 package database
 
-import "errors"
+import (
+	"context"
+	"errors"
+
+	"github.com/yusuf/gin-gonic-ecommerce/controller"
+)
 
 //Defining custom errors
 var(
@@ -12,9 +17,10 @@ var(
 	ErrCantGetItem = errors.New("unable to get the item from the cart")
 	ErrCantBuyCartItem = errors.New("cannot update the item purchase presently")
 )
+// var app controller.Application
+// var ctx context
 
-
-func AddProductToCart(){
+func AddProductToCart() error{
 
 }
 
