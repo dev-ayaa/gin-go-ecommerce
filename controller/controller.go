@@ -8,26 +8,48 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/gobuffalo/validate/v3"
 	"github.com/gobuffalo/validate/v3/validators"
+	"github.com/yusuf/gin-gonic-ecommerce/database"
 	"github.com/yusuf/gin-gonic-ecommerce/model"
 	"github.com/yusuf/gin-gonic-ecommerce/token"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
-var UserCollection *mongo.Collection
+//database collections
+var UserCollection *mongo.Collection = database.UserData(database.Client, "User")
+var ProductCollection *mongo.Collection = database.ProductData(database.Client, "Product")
 
-//HashPassword to hashed the user typed in password
+//Validator for models
+var Validate = validator.New()
+
+//HashPassword to hashed the user typed in password in the database
 func HashPassword(password string) string {
-
+	bytvalue, err := bcrypt.GenerateFromPassword([]byte(password), 15)
+	if err != nil {
+		log.Println(err)
+		log.Panicln(err)
+		return
+	}
+	return string(bytvalue)
 }
 
 //VerifyPassword to Verify the user password  with respect to the hashed password
 func VerifyPassword(userPassword, hashedPassword string) (bool, string) {
-
-	return true, ""
+	valid := true
+	msg := ""
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(userPassword))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		valid = false
+		msg = "invalid Login detail:: Incorrect password"
+		//  log.Println()
+		return valid, msg
+	}
+	return valid, msg
 }
 
 //SignUp allow the user to signup handlers
@@ -48,6 +70,7 @@ func SignUp() gin.HandlerFunc {
 		validationErr := Validate.Struct(user)
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr})
+			return
 		}
 
 		//checking for used email
@@ -80,7 +103,7 @@ func SignUp() gin.HandlerFunc {
 		token, refresh_token, _ := generate.TokenGenerator(*user.FirstName, *user.LastName, *user.Email)
 
 		user.Password = &password
-		user.ID = primitive.NewObjectID()
+		user.ID = primitive.NewObjectID() //new id since the user will just be signing up
 		user.UserID = user.ID.Hex()
 		user.CreatedAt, _ = time.Parse("RFC3339", time.Now().Format(time.RFC3339))
 		user.UpdatedAt, _ = time.Parse("RFC3339", time.Now().Format(time.RFC3339))
@@ -90,6 +113,7 @@ func SignUp() gin.HandlerFunc {
 		user.Token = &token
 		user.RefreshToken = &refresh_token
 
+		//Add the user to the UserCollection in the database
 		_, insertErr := UserCollection.InsertOne(ctx, user)
 		if insertErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "user cannot be created or insert into database"})
@@ -118,33 +142,66 @@ func Login() gin.HandlerFunc {
 		//Checking if the user exist in the database
 		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser)
 		defer cancelCtx()
-		if err != nil{
-			c.JSON(http.StatusInternalServerError,gin.H{"error":"incorrect login email"})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "incorrect login email"})
 			return
 		}
-		validPassword, passwordMsg := VerifyPassword(*user.Password,*foundUser.Password )
+		validPassword, passwordMsg := VerifyPassword(*user.Password, *foundUser.Password)
 		defer cancelCtx()
-		if !validPassword{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":passwordMsg})
+		if !validPassword {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": passwordMsg})
 			fmt.Println(passwordMsg)
 			return
 		}
 
 		token, refresh_token, _ := generate.TokenGenerator(*foundUser.FirstNAme, *foundUser.LastName, *foundUser)
 		defer cancelCtx()
-		
+
 		generate.UpdateAllToken(token, refresh_token)
 		c.JSON(http.StatusFound, foundUser)
+	}
+}
 
 //AdminAddProduct
-func AdminAddProduct() *gin.HandlerFunc {
+func AdminAddProduct() gin.HandlerFunc {
 	return nil
 }
 
-func SearchProduct() *gin.HandlerFunc {
-	return nil
+func SearchProduct() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		//Get all list of the product
+		var productList []model.Product
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelCtx()
+
+		//pass empty query to get all the product  in the database
+		cursor, err := ProductCollection.Find(ctx, bson.D{})
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, "Heh, something went wrong, try again after few minutes")
+			return
+		}
+
+		//this will iterates through a collection and store all the values
+		err = cursor.All(ctx, &productList)
+		if err != nil{
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		defer cursor.Close(ctx)
+		if err := cursor.Err() ; err != nil{
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, "invalid result")
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, productList)
+
+	}
 }
 
-func SearchProductByQuery() *gin.HandlerFunc {
-	return nil
+func SearchProductByQuery() gin.HandlerFunc {
+	return func(c *gin.Context){
+		var product []model.Product
+	}
 }
