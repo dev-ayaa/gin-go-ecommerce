@@ -1,10 +1,10 @@
 package database
 
 import (
-	"context"
+	_"context"
 	"errors"
 
-	"github.com/yusuf/gin-gonic-ecommerce/controller"
+	_"github.com/yusuf/gin-gonic-ecommerce/controller"
 )
 
 //Defining custom errors

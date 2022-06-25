@@ -20,7 +20,7 @@ func main() {
 		portNumber = "8080"
 	}
 
-	app := controller.NewApplication(database.ProductData(database.Client, "Product"), database.UserData(database.Client, "user"))
+	app := controller.NewApplication(database.ProductData(database.Client, "Product"), database.UserData(database.Client, "User"))
 
 	router := gin.New()
 	router.Use(gin.Logger())
