@@ -33,7 +33,7 @@ func HashPassword(password string) string {
 	if err != nil {
 		log.Println(err)
 		log.Panicln(err)
-		return
+		return ""
 	}
 	return string(bytvalue)
 }
@@ -116,11 +116,15 @@ func SignUp() gin.HandlerFunc {
 		//Add the user to the UserCollection in the database
 		_, insertErr := UserCollection.InsertOne(ctx, user)
 		if insertErr != nil {
+			log.Println(insertErr)
+			c.Header("Content-Type", "application/json")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "user cannot be created or insert into database"})
 			return
 		}
 		defer cancelCtx()
 
+		log.Println("Signed in successfully")
+		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusCreated, "Signed in successfully")
 
 	}
@@ -135,6 +139,8 @@ func Login() gin.HandlerFunc {
 		defer cancelCtx()
 
 		if err := c.BindJSON(&user); err != nil {
+			log.Println(err.Error())
+			c.Header("Content-Type", "application/json")
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -143,6 +149,8 @@ func Login() gin.HandlerFunc {
 		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser)
 		defer cancelCtx()
 		if err != nil {
+			log.Println(err)
+			c.Header("Content-Type", "application/json")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "incorrect login email"})
 			return
 		}
@@ -158,6 +166,7 @@ func Login() gin.HandlerFunc {
 		defer cancelCtx()
 
 		generate.UpdateAllToken(token, refresh_token)
+		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusFound, foundUser)
 	}
 }
@@ -202,6 +211,45 @@ func SearchProduct() gin.HandlerFunc {
 
 func SearchProductByQuery() gin.HandlerFunc {
 	return func(c *gin.Context){
-		var product []model.Product
+		var productQuery []model.Product
+
+		queryParams := c.Query("name")
+		if queryParams == ""{
+			log.Println("empty query result")
+			c.Header("Content-Type","application/json")
+			c.JSON(http.StatusNotFound, gin.H{"error": "empty query parameter"})
+			c.Abort()
+			return
+		}
+
+		//if the queryParams is not empty 
+		//initialize a context
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 10 * time.Second)
+		defer cancelCtx()
+
+		//pass empty query to get all the product  in the database
+		searchProduct, err := ProductCollection.Find(ctx, bson.M{"product_name": bson.M{"$regex" :queryParams}})
+		if err != nil{
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, "unable to fetch the product from the database")
+			return
+		}
+		err = searchProduct.All(ctx, &productQuery)
+		if err != nil{
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, "invalid result from databse")
+			return
+		}
+
+		defer searchProduct.Close(ctx)
+		if err = searchProduct.Err(); err != nil{
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, "invalid request from the database")
+			return
+		}
+		defer cancelCtx()
+
+		c.IndentedJSON(http.StatusOK, searchProduct)
+
 	}
 }

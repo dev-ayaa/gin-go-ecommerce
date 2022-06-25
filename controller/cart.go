@@ -82,14 +82,14 @@ func (app *Application) RemoveItemFromCart() gin.HandlerFunc {
 		queryProductID := c.Query("product_id")
 		if queryProductID == "" {
 			log.Println("product id not in database")
-			c.AbortWithError(http.StatusBadRequest, errors.New("product id not in database"))
+			_ = c.AbortWithError(http.StatusBadRequest, errors.New("product id not in database"))
 			return
 		}
 
 		queryUserID := c.Query("user_id")
 		if queryUserID == "" {
 			log.Println("user id not in the database")
-			c.AbortWithError(http.StatusBadRequest, errors.New("user id not in the database"))
+			_ =c.AbortWithError(http.StatusBadRequest, errors.New("user id not in the database"))
 			return
 		}
 
@@ -113,14 +113,70 @@ func (app *Application) RemoveItemFromCart() gin.HandlerFunc {
 	}
 }
 
-func (app *Application) GetItemFromCart() *gin.HandlerFunc {
-	return nil
+func (app *Application) GetItemFromCart() gin.HandlerFunc {
+	return func(c *gin.Context){
+
+	}
 }
 
-func (app *Application) BuyItemFromCart() *gin.HandlerFunc {
-	return nil
+func (app *Application) BuyItemFromCart() gin.HandlerFunc {
+	return func(c *gin.Context){
+		queryUserID := c.Query("user_id")
+		if queryUserID == ""{
+			log.Print("no user id , id not available")
+			_ = c.AbortWithError(http.StatusBadRequest, errors.New("no user id , id not available"))
+			return
+		}
+
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 10 * time.Second)
+		defer cancelCtx()
+
+		err := database.BuyItemFromCart(ctx, app.userCollection, app.productCollection, queryUserID)
+		if err != nil{
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, err)
+			return
+		}
+		c.IndentedJSON(http.StatusOK, "successfully buy item from cart")
+	}
+		
 }
 
-func (app *Application) InstantBuy() *gin.HandlerFunc {
-	return nil
+func (app *Application) InstantBuy() gin.HandlerFunc {
+	return func(c *gin.Context){
+	//get the product id
+	//get the right user id that want to buy the item
+	//get the amount paid for the item
+	queryProductID := c.Query("product_id")
+	if queryProductID == ""{
+		log.Println("no product id")
+		_ = c.AbortWithError(http.StatusBadRequest, errors.New("no product id"))
+		return
+	}
+	queryUserID := c.Query("user_id")
+	if queryProductID == ""{
+		log.Println("no user id")
+		_ = c.AbortWithError(http.StatusBadRequest, errors.New("no user id"))
+		return
+	}
+	
+	productID, err :=primitive.ObjectIDFromHex(queryProductID)
+	if err != nil{
+		log.Println(err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 10 * time.Second)
+	defer cancelCtx()
+
+	err = database.InstantBuy(ctx, app.userCollection, app.productCollection,productID,queryUserID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.IndentedJSON(http.StatusOK, "successfully buy the item")
+
+	}
+
 }
