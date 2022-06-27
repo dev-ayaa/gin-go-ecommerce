@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/gobuffalo/validate/v3"
 	"github.com/gobuffalo/validate/v3/validators"
 	"github.com/yusuf/gin-gonic-ecommerce/database"
 	"github.com/yusuf/gin-gonic-ecommerce/model"
@@ -146,7 +145,7 @@ func Login() gin.HandlerFunc {
 		}
 
 		//Checking if the user exist in the database
-		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&existingUser)
+		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
 		defer cancelCtx()
 		if err != nil {
 			log.Println(err)
@@ -158,11 +157,11 @@ func Login() gin.HandlerFunc {
 		defer cancelCtx()
 		if !validPassword {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": passwordMsg})
-			fmt.Println(passwordMsg)
+			log.Println(passwordMsg)
 			return
 		}
 
-		token, refresh_token, _ := generate.TokenGenerator(*foundUser.FirstNAme, *foundUser.LastName, *foundUser)
+		token, refresh_token, _ := generate.TokenGenerator(*foundUser.FirstName, *foundUser.LastName, *foundUser)
 		defer cancelCtx()
 
 		generate.UpdateAllToken(token, refresh_token)

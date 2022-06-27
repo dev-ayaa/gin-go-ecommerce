@@ -2,10 +2,7 @@ package database
 
 import (
 	_"context"
-	"errors"
-
-	_"github.com/yusuf/gin-gonic-ecommerce/controller"
-)
+	"errors")
 
 //Defining custom errors
 var(
@@ -21,7 +18,7 @@ var(
 // var ctx context
 
 func AddProductToCart() error{
-
+	return nil
 }
 
 
